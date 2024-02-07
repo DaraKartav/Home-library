@@ -1,0 +1,477 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Collections.Generic;
+using CourseWork.Models;
+using CourseWork.Enums;
+
+
+namespace CourseWork.Enums
+{
+    public enum ActionMenuEnum
+    {
+        Empty,
+        Create,
+        PrintBookName,
+        PrintBookAuth,
+        PrintBookYear,
+        PrintBookGenre,
+        PrintBookProd,
+        PrintAllBooks
+    }
+}
+namespace CourseWork.Models
+{
+    public class Book
+    {
+        public string Name { get; set; }
+
+        public string Author { get; set; }
+
+        public string Year { get; set; }
+
+        public string Prod { get; set; }
+
+        public string Genre { get; set; }
+
+        public override string ToString()
+        {
+            return $"Название: {Name}, автор: {GetString(Author)}, " +
+                $"Год издания: {Year}, издатель: {GetString(Prod)}, " +
+                $"Жанр: {GetString(Genre)}";
+        }
+
+        public string ToStringShort()
+        {
+            return $"Название: {Name}, автор: {GetStringForShort(Author)}, год издания: {Year}, издательство: {GetStringForShort(Prod)}, жанр: {GetStringForShort(Genre)}.";
+        }
+
+        private string GetString(string line)
+        {
+            return !String.IsNullOrEmpty(line) ? line : "увы, но неизветно";
+        }
+
+        private string GetStringForShort(string line)
+        {
+            return !String.IsNullOrEmpty(line) ? line : $"нет данных";
+        }
+    }
+}
+namespace CourseWork
+{
+    public class MenuElement
+    {
+        public string Name { get; set; }
+
+        public string TextMenu { get; set; }
+
+        public ActionMenuEnum ActionType { get; set; }
+
+        public List<MenuElement> Submenu { get; set; }
+    }
+    namespace CourseWork.Models
+    {
+        public class Book
+        {
+            public string Name { get; set; }
+
+            public string Author { get; set; }
+
+            public string Year { get; set; }
+
+            public string Prod { get; set; }
+
+            public string Genre { get; set; }
+
+            public override string ToString()
+            {
+                return $"Название: {Name}, автор: {GetString(Author)}, " +
+                    $"Год издвания: {Year}, издатель: {GetString(Prod)}, " +
+                    $"Жанр: {GetString(Genre)}";
+            }
+
+            public string ToStringShort()
+            {
+                return $"Название: {Name}, автор: {GetStringForShort(Author)}, год издания: {Year}, издательство: {GetStringForShort(Prod)}, жанр: {GetStringForShort(Genre)}.";
+            }
+
+            private string GetString(string line)
+            {
+                return !String.IsNullOrEmpty(line) ? line : "увы, но неизветно";
+            }
+
+            private string GetStringForShort(string line)
+            {
+                return !String.IsNullOrEmpty(line) ? line : $"нет данных";
+            }
+        }
+    }
+    class MainClass
+    {
+        const int exitLine = 0;
+
+        static List<Book> Books = new List<Book>();
+
+        static List<MenuElement> menuElements = new List<MenuElement>()
+        {
+            new MenuElement()
+            {
+                Name = "Действия с библиотекой",
+                ActionType = ActionMenuEnum.Empty,
+                Submenu = new List<MenuElement>()
+                {
+                    new MenuElement()
+                    {
+                        Name = "Добавить книгу",
+                        ActionType = ActionMenuEnum.Create
+                    },
+                    new MenuElement()
+                    {
+                        Name = "Поиск по библиотеке",
+                        Submenu = new List<MenuElement>()
+                        {
+                            new MenuElement()
+                            {
+                                Name = "Поиск по названию",
+                                ActionType = ActionMenuEnum.PrintBookName
+                            },
+                            new MenuElement()
+                            {
+                                Name = "Поиск по автору",
+                                ActionType = ActionMenuEnum.PrintBookAuth
+                            },
+                            new MenuElement()
+                            {
+                                Name = "Поиск по году издания",
+                                ActionType = ActionMenuEnum.PrintBookYear
+                            },
+                            new MenuElement()
+                            {
+                                Name = "Поиск по жанру",
+                                ActionType = ActionMenuEnum.PrintBookGenre
+                            },
+                            new MenuElement()
+                            {
+                                Name = "Поиск по издательству",
+                                ActionType = ActionMenuEnum.PrintBookProd
+                            },
+                        }
+                    }
+                }
+            },
+            new MenuElement()
+            {
+                Name = "Вывести полную библиотеку",
+                ActionType = ActionMenuEnum.PrintAllBooks
+            }
+        };
+
+        static void Main()
+        {
+            PrintMenu(menuElements);
+            MenuActions();
+        }
+
+        static void MenuActions()
+        {
+            int menuElementNumber = -1;
+            var menu = menuElements;
+            List<MenuElement> oldmenu = null;
+
+            while (menuElementNumber != exitLine)
+            {
+                Console.Clear();
+                PrintMenu(menu);
+                int.TryParse(Console.ReadLine(), out menuElementNumber);
+
+                if (menuElementNumber == exitLine)
+                    return;
+                if (menuElementNumber == -1)
+                {
+                    if (oldmenu != null)
+                        menu = oldmenu;
+                    continue;
+                }
+
+                if (menu != null && menu.Any())
+                {
+                    Console.Clear();
+                    if (menuElementNumber < 1 || menuElementNumber > menu.Count)
+                    {
+                        PrintMenu(menu);
+                        continue;
+                    }
+                    var element = menu[menuElementNumber - 1];
+
+                    if (element.Submenu != null && element.Submenu.Count > 0)
+                    {
+                        oldmenu = menu;
+                        menu = element.Submenu;
+                    }
+                    if (element.ActionType != ActionMenuEnum.Empty)
+                    {
+                        MenuAction(element);
+                    }
+                }
+            }
+        }
+
+        public static void MenuAction(MenuElement menuElement)
+        {
+            bool actionEnd = false;
+            Console.Clear();
+            string path = @"biblio.txt";
+            switch (menuElement.ActionType)
+            {
+                case ActionMenuEnum.Create:
+                    while (!actionEnd)
+                    {
+                        var yearInt = -1;
+                        var newBook = new Book();
+                        Console.WriteLine("Введите название:");
+                        newBook.Name = Console.ReadLine();
+                        if (String.IsNullOrEmpty(newBook.Name))
+                        {
+                            Console.WriteLine("Невозможно продолжить без названия.");
+                            continue;
+                        }
+                        Console.WriteLine("Введите автора:");
+                        var print = Console.ReadLine();
+                        newBook.Author = String.IsNullOrEmpty(print) ? null : print;
+                        Console.WriteLine("Введите год издания:");
+                        print = Console.ReadLine();
+                        int.TryParse(print, out yearInt);
+                        if (yearInt < 0 || print.Length != 4 || yearInt > 2020)
+                        {
+                            Console.Clear();
+                            Console.WriteLine("Год должен содержать ровно 4 цифры и не превышать текущий (2020)");
+                            continue;
+                        }
+                        newBook.Year = String.IsNullOrEmpty(print) ? null : print;
+                        Console.WriteLine("Введите жанр:");
+                        print = Console.ReadLine();
+                        newBook.Genre = String.IsNullOrEmpty(print) ? null : print;
+                        Console.WriteLine("Введите издательство:");
+                        print = Console.ReadLine();
+                        newBook.Prod = String.IsNullOrEmpty(print) ? null : print;
+
+                        bool append = true;
+                        StreamWriter sw = new StreamWriter(path, append);
+                        sw.WriteLine("{0}:{1}:{2}:{3}:{4}", newBook.Name, newBook.Author, newBook.Year, newBook.Genre, newBook.Prod);
+                        sw.Close();
+                        actionEnd = true;
+                    }
+                    break;
+                case ActionMenuEnum.PrintBookName:
+                    Console.WriteLine("Введите название книги");
+                    string name1 = Console.ReadLine();
+                    Books.Clear();
+
+                    StreamReader sr1 = new StreamReader(path);
+                    string line1;
+                    while ((line1 = sr1.ReadLine()) != null)
+                    {
+                        string[] buf = line1.Split(':');
+                        var newBook = new Book();
+
+                        newBook.Name = buf[0];
+                        newBook.Author = buf[1];
+                        newBook.Year = buf[2];
+                        newBook.Genre = buf[3];
+                        newBook.Prod = buf[4];
+                        Books.Add(newBook);
+                    }
+                    sr1.Close();
+
+
+                    foreach (var book in Books)
+                    {
+                        if (book.Name == name1)
+                        {
+                            Console.WriteLine(book.ToString());
+                        }
+                    }
+                    Console.WriteLine("Нажмите Enter чтобы продолжить...");
+                    Console.ReadLine();
+                    actionEnd = true;
+                    break;
+                case ActionMenuEnum.PrintBookAuth:
+                    Console.WriteLine("Введите автора книги");
+                    string auth1 = Console.ReadLine();
+                    Books.Clear();
+                    StreamReader sr2 = new StreamReader(path);
+                    string line2;
+                    while ((line2 = sr2.ReadLine()) != null)
+                    {
+                        string[] buf = line2.Split(':');
+                        var newBook = new Book();
+
+                        newBook.Name = buf[0];
+                        newBook.Author = buf[1];
+                        newBook.Year = buf[2];
+                        newBook.Genre = buf[3];
+                        newBook.Prod = buf[4];
+                        Books.Add(newBook);
+                    }
+                    sr2.Close();
+
+                    foreach (var book in Books)
+                    {
+                        if (book.Author == auth1)
+                        {
+                            Console.WriteLine(book.ToString());
+                        }
+                    }
+                    Console.WriteLine("Нажмите Enter чтобы продолжить...");
+                    Console.ReadLine();
+                    actionEnd = true;
+                    break;
+                case ActionMenuEnum.PrintBookYear:
+                    Console.WriteLine("Введите год издания книги");
+                    string year1 = Console.ReadLine();
+
+                    Books.Clear();
+                    StreamReader sr3 = new StreamReader(path);
+                    string line3;
+                    while ((line3 = sr3.ReadLine()) != null)
+                    {
+                        string[] buf = line3.Split(':');
+                        var newBook = new Book();
+
+                        newBook.Name = buf[0];
+                        newBook.Author = buf[1];
+                        newBook.Year = buf[2];
+                        newBook.Genre = buf[3];
+                        newBook.Prod = buf[4];
+                        Books.Add(newBook);
+                    }
+                    sr3.Close();
+
+                    foreach (var book in Books)
+                    {
+                        if (book.Year == year1)
+                        {
+                            Console.WriteLine(book.ToString());
+                        }
+                    }
+                    Console.WriteLine("Нажмите Enter чтобы продолжить...");
+                    Console.ReadLine();
+                    actionEnd = true;
+                    break;
+                case ActionMenuEnum.PrintBookGenre:
+                    Console.WriteLine("Введите жанр книги");
+                    string genre1 = Console.ReadLine();
+
+                    Books.Clear();
+                    StreamReader sr4 = new StreamReader(path);
+                    string line4;
+                    while ((line4 = sr4.ReadLine()) != null)
+                    {
+                        string[] buf = line4.Split(':');
+                        var newBook = new Book();
+
+                        newBook.Name = buf[0];
+                        newBook.Author = buf[1];
+                        newBook.Year = buf[2];
+                        newBook.Genre = buf[3];
+                        newBook.Prod = buf[4];
+                        Books.Add(newBook);
+                    }
+                    sr4.Close();
+
+                    foreach (var book in Books)
+                    {
+                        if (book.Genre == genre1)
+                        {
+                            Console.WriteLine(book.ToString());
+                        }
+                    }
+                    Console.WriteLine("Нажмите Enter чтобы продолжить...");
+                    Console.ReadLine();
+                    actionEnd = true;
+                    break;
+                case ActionMenuEnum.PrintBookProd:
+                    Console.WriteLine("Введите издательство книги");
+                    string prod1 = Console.ReadLine();
+
+                    Books.Clear();
+                    StreamReader sr5 = new StreamReader(path);
+                    string line5;
+                    while ((line5 = sr5.ReadLine()) != null)
+                    {
+                        string[] buf = line5.Split(':');
+                        var newBook = new Book();
+
+                        newBook.Name = buf[0];
+                        newBook.Author = buf[1];
+                        newBook.Year = buf[2];
+                        newBook.Genre = buf[3];
+                        newBook.Prod = buf[4];
+                        Books.Add(newBook);
+                    }
+                    sr5.Close();
+
+                    foreach (var book in Books)
+                    {
+                        if (book.Author == prod1)
+                        {
+                            Console.WriteLine(book.ToString());
+                        }
+                    }
+                    Console.WriteLine("Нажмите Enter чтобы продолжить...");
+                    Console.ReadLine();
+                    actionEnd = true;
+                    break;
+                case ActionMenuEnum.PrintAllBooks:
+
+                    Books.Clear();
+                    StreamReader sr6 = new StreamReader(path);
+                    string line6;
+                    while ((line6 = sr6.ReadLine()) != null)
+                    {
+                        string[] buf = line6.Split(':');
+                        var newBook = new Book();
+
+                        newBook.Name = buf[0];
+                        newBook.Author = buf[1];
+                        newBook.Year = buf[2];
+                        newBook.Genre = buf[3];
+                        newBook.Prod = buf[4];
+                        Books.Add(newBook);
+                    }
+                    sr6.Close();
+
+                    foreach (var book in Books)
+                    {
+                        Console.WriteLine(book.ToString());
+                    }
+                    Console.WriteLine("Нажмите Enter чтобы вернуться...");
+                    Console.ReadLine();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public static void PrintMenu(List<MenuElement> menu)
+        {
+            int countElement = 1;
+            foreach (var element in menu)
+            {
+                Console.WriteLine($"{countElement} - {element.Name}.");
+                countElement++;
+            }
+
+            PrintEndintMenuText();
+        }
+
+        private static void PrintEndintMenuText()
+        {
+            Console.WriteLine("Или -1 чтобы вернуться в предыдущее меню!");
+            Console.WriteLine();
+            Console.WriteLine("Выберите элемент меню");
+            Console.WriteLine();
+
+        }
+    }
+}
